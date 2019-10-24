@@ -1,7 +1,6 @@
 #/bin/bash
-cd /opt/rootkit
-make
-insmod main.ko
-rmmod main.ko
+make                # compile module
+insmod main.ko      # load module
+rmmod main.ko       # unload module
 
-#journalctl -xefk # to see output
+#journalctl -xefk   # to see output
