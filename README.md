@@ -31,3 +31,4 @@ functionalities.
 * https://github.com/En14c/LilyOfTheValley
 * https://0x00sec.org/t/kernel-rootkits-getting-your-hands-dirty/1485
 * https://github.com/nurupo/rootkit
+* https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234?gi=dd922974e1ce
