@@ -132,9 +132,10 @@ static int setup_device(void)
 // called each time device is opened from userspace
 static int dev_open (struct inode *inode, struct file *f)
 {
-	printk ("Device open\n");
-	numberOpens++;
-	printk(KERN_INFO "Device has been opened %d time(s)\n", numberOpens);
+	//printk ("Device open\n");
+	//numberOpens++;
+	//printk(KERN_INFO "Device has been opened %d time(s)\n", numberOpens);
+	printk(KERN_INFO "----------------------------\n");
 	return 0;
 }
 
@@ -220,7 +221,7 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 // Called when the device is closed in user space.
 static int dev_release(struct inode *inodep, struct file *filep)
 {
-	printk ("Device release\n");
+	//printk ("Device release\n");
 	return 0;
  }
 
