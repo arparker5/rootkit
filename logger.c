@@ -65,7 +65,7 @@ static const char *us_keymap[][2] = {
 };
 
 static size_t buf_pos;
-static char keys_buf[BUF_LEN];
+static char __user keys_buf[BUF_LEN];
 
 // *********************************************************************
 // functions definitions

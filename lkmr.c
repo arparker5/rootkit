@@ -157,7 +157,7 @@ static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
    //error_count = memcpy(buf, keys_buf, len);
 
    if (error_count==0){
-      printk(KERN_INFO "User read %d characters\n", len);
+      printk(KERN_INFO "User read %lu characters\n", len);
       return (sizeof(keys_buf));
    }
    else {
@@ -188,11 +188,6 @@ static int give_root(void)
 bool compareBufs(const char *a, const char *b, const size_t len)
 {
   return memcmp(a, b, len) == 0;
-}
-
-char * getBytesOfBuf(const char *buf, const size_t len)
-{
-
 }
 
 // called each time data is sent from user space to the device

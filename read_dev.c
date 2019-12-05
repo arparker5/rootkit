@@ -35,6 +35,7 @@ int main(){
   }
   printf("The received message is: [%s]\n", receive);
   printf("End of the message\n");
+  printf("ret: %d", ret);
 
   close(fd);
 
