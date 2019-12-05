@@ -23,9 +23,6 @@ int main(){
      return errno;
   }
 
-  //printf("Press ENTER to read back from the device...\n");
-  //getchar();
-
   printf("Reading from the device...\n");
   ret = read(fd, receive, BUFFER_LENGTH);        // Read the response from the LKM
   if (ret < 0){
@@ -35,7 +32,6 @@ int main(){
   }
   printf("The received message is: [%s]\n", receive);
   printf("End of the message\n");
-  printf("ret: %d", ret);
 
   close(fd);
 

