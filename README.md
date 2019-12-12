@@ -23,7 +23,7 @@ and manipulating devices.
   * ``echo "CS493" >> /dev/ttyR0`` gives root access to user
   * able to read string stored in kernel using a userspace program
   * ``echo "keylogger" >> /dev/ttyR0`` turns on the keylogger. Keys pressed are written to the file ‘keys’ located in sys/kernel/debug/lkmr. 
-  * “echo ‘exitkeylogger’ >> /dev/ttyR0” turns off the keylogger.
+  * ``echo ‘exitkeylogger’ >> /dev/ttyR0`` turns off the keylogger.
 
 ### Useful links
 ##### how-tos
