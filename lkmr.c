@@ -2,6 +2,8 @@
 // Alex Cater & Andrew Parker
 // 2019-12-11
 // Linux Kernel Module Rootkit
+// Based off of implementation on
+// https://0x00sec.org/t/kernel-rootkits-getting-your-hands-dirty/1485
 
 #include <linux/module.h>	/* Needed by all modules */
 #include <linux/kallsyms.h> /* for kallsyms_lookup_name */
