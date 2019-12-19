@@ -1,19 +1,27 @@
 # Linux Kernel Module Rootkit
 
 ## Andrew Parker, Alex Cater
-##### CS 493 Project draft
+##### CS 493 Project
 
-For our project, we have decided to examine the inner workings of a rootkit to understand it,
-infect a VM with it, and do some analysis on it. We took the original rootkit code and added some
-more functionality to it.
+For our project, we have decided to write a linux kernel module capable of providing root, 
+along with some other basic functionalities. The main purpose of this project was to gain 
+experience working with linux under the hood through writing a kernel module, as well as to 
+gain a basic understanding of how to go about writing a rootkit with some functionalities. 
+During our process, at some points we used code online to help us with our implementation. 
+Credits are given at the end of this document. 
 
-For our rough draft, we have taken the code of a rootkit and done some analysis. While we went
-through the code to get a better understanding, we made comments to explain the basics of how
-our rootkit functions. We are in the process of adding new functionalities to the rootkit as well.
+Our kernel module creates a character device that we able to define arbitrary functions 
+to be used when a user tries to write or read data from the device. When a user writes 
+the correct “password” to the device then the module gets the user’s current user id and 
+changes it to 0, giving them root access. Since we were able to define the functions to be 
+any arbitrary code, we could extend our rootkit capabilities, such as adding a keylogger.
 
-This project helped us gain a much better understanding of the inner workings of the linux operating
-system, as well as how rootkits work. This project also expanded our knowledge on writing kernel modules
-and manipulating devices.
+When we write ‘keylogger’ to the device we created, our keylogger is turned on. 
+This is displayed in the kernel logs. During initialization, the keylogger creates a file
+to write the keys pressed to. The file can be accessed in /sys/kernel/debug/lkmr/keys. 
+We have a keyboard notifier block that is calling code whenever a keyboard event happens. 
+This code translates the given scan codes that were pressed to readable keys. This is written 
+to a string buffer that writes to the file ‘keys’. 
 
 
 ### Functionality
@@ -26,13 +34,15 @@ and manipulating devices.
   * ``echo "exitkeylogger" >> /dev/ttyR0`` turns off the keylogger.
 
 ### Useful links
-##### how-tos
+##### How-tos
  * https://blog.trailofbits.com/2019/01/17/how-to-write-a-rootkit-without-really-trying/
  * http://tldp.org/LDP/lkmpg/2.6/html/lkmpg.html#AEN189
 
-##### rootkit examples
+##### Rootkit examples
 * https://github.com/En14c/LilyOfTheValley
-* https://0x00sec.org/t/kernel-rootkits-getting-your-hands-dirty/1485
 * https://github.com/nurupo/rootkit
 * https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234?gi=dd922974e1ce
+
+##### Sources
+* https://0x00sec.org/t/kernel-rootkits-getting-your-hands-dirty/1485
 * https://github.com/jarun/keysniffer
